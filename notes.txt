@@ -1,0 +1,8 @@
+npm install fabric --save
+npm install fabric@4
+create html canvas element with id.
+
+import fabric and create and object on mounted:
+new fabric.Canvas(id);
+
+define canvas object globally for later use.
