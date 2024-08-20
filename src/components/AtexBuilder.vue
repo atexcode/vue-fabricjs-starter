@@ -110,7 +110,6 @@ const loadControlls = () => {
 
   const renderIcon = (icon) => {
     return function renderIcon(ctx, left, top, styleOverride, fabricObject) {
-      console.log(styleOverride);
       var size = this.cornerSize;
       ctx.save();
       ctx.translate(left, top);
