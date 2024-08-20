@@ -42,6 +42,9 @@ To get started with this project, follow these steps:
    ```
    http://localhost:8080
    ```
+## Demo
+
+Checkout live working demo @ [Vue FabricJs Starter - Atex Code](https://atexcode.com/demo/vue-fabricjs-starter)
 
 ## Usage
 
