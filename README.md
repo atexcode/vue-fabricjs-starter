@@ -1,12 +1,13 @@
 # FabricJs Starter - Vue 3
 
-A starter kit for building applications using Vue 3 and Fabric.js. This project provides a basic setup for integrating Fabric.js with Vue 3, allowing you to work with text, images, and background images with clipping paths.
+`vue3-fabricjs-starter` is a starter kit designed for building applications with Vue 3 and FabricJs. This project provides a foundational setup for integrating Fabric.js with Vue 3, making it easier to create and manipulate graphical elements within your applications.
 
-## Features
+### Key Features:
+- **Text Handling:** Add and edit text elements on the canvas.
+- **Image Integration:** Upload and manage images on the canvas.
+- **Background Images:** Set background image with clipping path for advanced visual effects.
 
-- Add and manipulate text on the canvas
-- Upload and add images
-- Add and manage background images with clipping paths
+Whether you're building a canvas-based application or a creative tool, this starter kit offers a solid base to build upon with Vue 3 and Fabric.js.
 
 ## Installation
 
@@ -41,11 +42,18 @@ To get started with this project, follow these steps:
    ```
    http://localhost:8080
    ```
+## Demo
+
+Checkout live working demo @ [Vue FabricJs Starter - Atex Code](https://atexcode.com/demo/vue-fabricjs-starter)
 
 ## Usage
 
 - Add text, images, and background images to the canvas.
 - Use the provided functionality to apply clipping paths and manage canvas elements.
+
+## Previews
+![Background Image + Image + IText](https://atexcode.com/remote/screenshot1.png)
+![Active Text](https://atexcode.com/remote/screenshot2.png)
 
 ## Author
 
