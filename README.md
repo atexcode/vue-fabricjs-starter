@@ -57,7 +57,7 @@ Checkout live working demo @ [Vue FabricJs Starter - Atex Code](https://atexcode
 
 ## Author
 
-If you encounter any issues or have questions, feel free to contact me at [athar.techs@gmail.com](mailto:athar.techs@gmail.com).
+If you encounter any issues or have questions, feel free to contact me at [athar.techs@gmail.com](mailto:athar.techs@gmail.com) or hire me by visiting [atexcode.com](https://atexcode.com).
 
 ## License
 
