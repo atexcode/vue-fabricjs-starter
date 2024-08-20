@@ -48,6 +48,10 @@ To get started with this project, follow these steps:
 - Add text, images, and background images to the canvas.
 - Use the provided functionality to apply clipping paths and manage canvas elements.
 
+## Previews
+![Background Image + Image + IText](https://atexcode.com/remote/screenshot1.png)
+![Active Text](https://atexcode.com/remote/screenshot2.png)
+
 ## Author
 
 If you encounter any issues or have questions, feel free to contact me at [athar.techs@gmail.com](mailto:athar.techs@gmail.com).
