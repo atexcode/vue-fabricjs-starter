@@ -1,15 +1,14 @@
 <template>
-  <CanvasBuilder />
+  <AtexBuilder />
 </template>
 
 <script>
-import CanvasBuilder from './components/CanvasBuilder.vue';
-// import HelloWorld from './components/HelloWorld.vue'
+import AtexBuilder from './components/AtexBuilder.vue'
 
 export default {
   name: 'App',
   components: {
-    CanvasBuilder
+    AtexBuilder
   }
 }
 </script>
