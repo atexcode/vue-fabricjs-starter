@@ -141,14 +141,19 @@ const deleteObjectBySelection = (eventData, transform) => {
 const addText = () => {
   console.log(activeObject.value);
 
+  const canvasCenter = getCenter();
   const text = new fabric.Textbox('Enter Text', {
-    left: 100,
-    top: 100,
     fill: color.value,
     backgroundColor: itemBackgroundColor.value,
     fontFamily: "Helvetica",
     selectable: true,
   });
+
+  text.set({
+    left: canvasCenter.x - ((text.width || 1) / 2),
+    top: canvasCenter.y - ((text.height || 1) / 2),
+  });
+
   canvas.add(text);
 };
 
@@ -158,13 +163,16 @@ const addText = () => {
 const addIText = () => {
   console.log(activeObject.value);
 
+  var canvasCenter = getCenter();
   const text = new fabric.IText('Enter Text', {
-    left: 100,
-    top: 100,
     fill: color.value,
-    // backgroundColor: itemBackgroundColor.value,
     fontFamily: "Helvetica",
     selectable: true,
+  });
+
+  text.set({
+    left: canvasCenter.x - ((text.width || 1) / 2),
+    top: canvasCenter.y - ((text.height || 1) / 2),
   });
   canvas.add(text);
 };
@@ -181,7 +189,9 @@ const insertImage = (file) => {
     const imgUrl = event.target.result;
 
     fabric.Image.fromURL(imgUrl, (img) => {
-      img.set({ left: 100, top: 100 });
+      var canvasCenter = getCenter();
+
+      img.set({ left: canvasCenter.x - (img.width / 2), top: canvasCenter.y - (img.height / 2) });
       canvas.add(img);
       console.log("Image successfully loaded and added to the canvas.");
     });
@@ -235,6 +245,16 @@ const eraseItem = () => {
 };
 
 /**
+ * Calculate Canvas Center
+ */
+const getCenter = () => {
+  var canvasCenterX = canvas.getWidth() / 2;
+  var canvasCenterY = canvas.getHeight() / 2;
+  
+  return { x: canvasCenterX, y: canvasCenterY };
+}
+
+/**
  * Load an image as background and set it as clip path
  */
 const loadBackground = (file) => {
@@ -244,12 +264,11 @@ const loadBackground = (file) => {
     const imgUrl = event.target.result;
     fabric.Image.fromURL(imgUrl, (img) => {
       // Calculate the center position
-      var canvasCenterX = canvas.getWidth() / 2;
-      var canvasCenterY = canvas.getHeight() / 2;
+      var canvasCenter = getCenter();
       // Set img attributes
       img.set({
-        left: canvasCenterX - (img.width / 2),
-        top: canvasCenterY - (img.height / 2),
+        left: canvasCenter.x - (img.width / 2),
+        top: canvasCenter.y - (img.height / 2),
         selectable: false,
       });
 
