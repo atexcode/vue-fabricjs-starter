@@ -25,7 +25,6 @@
       <el-col :span="1.5">
         <el-button icon="ZoomIn" @click="getPixelData"> Get Pixels</el-button>
       </el-col>
-
     </el-row>
 
 
@@ -185,8 +184,6 @@ const eraseItem = () => {
     console.log("No active object found");
   }
 };
-
-
 
 //Load Sample Canvas Image
 // const loadSampleImage = () => {
