@@ -23,7 +23,9 @@
         <el-button icon="Delete" @click="eraseItem"> Delete</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button icon="ZoomIn" @click="getPixelData"> Get Pixels</el-button>
+        <el-upload :show-file-list="false" accept="image/*" :before-upload="loadBackground">
+          <el-button icon="PictureFilled">BG Mask Image</el-button>
+        </el-upload>
       </el-col>
     </el-row>
 
@@ -185,6 +187,41 @@ const eraseItem = () => {
   }
 };
 
+
+const loadBackground = (file) => {
+  const reader = new FileReader();
+
+  reader.onload = (event) => {
+    const imgUrl = event.target.result;
+    fabric.Image.fromURL(imgUrl, (img) => {
+      // Calculate the center position
+      var canvasCenterX = canvas.getWidth() / 2;
+      var canvasCenterY = canvas.getHeight() / 2;
+      // Set img attributes
+      img.set({
+        left: canvasCenterX - (img.width / 2),
+        top: canvasCenterY - (img.height / 2),
+        selectable: false,
+      });
+
+      // Send Img to Back
+      img.sendToBack();
+      canvas.add(img);
+      canvas.clipPath = img;
+      shirtImage = img;
+      canvas.requestRenderAll();
+    });
+  };
+
+  reader.onerror = (error) => {
+    console.error("FileReader error:", error);
+  };
+
+  reader.readAsDataURL(file.raw || file);
+
+  return false;
+}
+
 //Load Sample Canvas Image
 // const loadSampleImage = () => {
 //   console.log("Button clicked:before");
@@ -234,102 +271,6 @@ const eraseItem = () => {
 // }
 //Get Pixel Data
 
-const getPixelData = () => {
-  // Get the HTMLImageElement from the Fabric.js image object
-  const imgElement = shirtImage.getElement();
-
-  // Calculate the boundary path from the image
-  // Use potrace to trace the image and get SVG path
-  trace(imgElement.src, (err) => {
-    if (err) {
-      console.error('Error tracing image:', err);
-      return;
-    }
-
-    const svgObject = ``;
-
-    const parser = new DOMParser();
-    const svgDoc = parser.parseFromString(svgObject, 'image/svg+xml');
-
-    // const groups = svgDoc.querySelectorAll('g');
-
-    // if (!groups.length) {
-    //   console.error('No <g> elements found in SVG');
-    //   return;
-    // }
-
-    // Create an array to hold all the paths for clip paths
-    const clipPaths = [];
-
-    // groups.forEach((group) => {
-    // Select all <path> elements within the <g> element
-    const paths = svgDoc.querySelectorAll('path');
-
-    paths.forEach((path) => {
-      const svgPath = path.getAttribute('d');
-
-      if (!svgPath) return; // Skip if no path data
-
-      // Convert SVG path to fabric path
-      const boundaryPath = new fabric.Path(svgPath, {
-        selectable: true,
-        objectCaching: false,
-        top: 0,
-        left: 0,
-        fill: 'red', // You can adjust fill as needed
-        stroke: 'black',     // You can adjust stroke as needed
-        strokeWidth: 3,
-      });
-
-      // Add this path to the array of clip paths
-      clipPaths.push(boundaryPath);
-    });
-    //});
-
-    const combinedClipPath = new fabric.Group(clipPaths, {
-      selectable: true,
-      objectCaching: false
-    });
-
-    canvas.add(combinedClipPath);
-    canvas.clipPath = combinedClipPath;
-    canvas.requestRenderAll();
-
-    // Convert SVG path to fabric path
-    // const boundaryPath = new fabric.Path(svgPath, {
-    //   selectable: false,
-    //   objectCaching: false,
-    //   top: 0,
-    //   left: 0,
-    //   fill: 'transparent',
-    //   stroke: 'black',
-    //   strokeWidth: 3,
-    // });
-
-    // canvas.add(boundaryPath);
-
-    // console.log("Pixels: ");
-    // console.log(boundaryPath);
-
-    // const pathData = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 124 124" fill="none"><rect width="124" height="124" rx="24" fill="#F97316"/><path d="M10 80q85-70 170 0t180 0" fill="#fff"/><circle cx="63.211" cy="37.539" r="18.164" fill="#000"/><rect opacity=".4" x="81.133" y="80.72" width="17.569" height="17.388" rx="4" transform="rotate(-45 81.133 80.72)" fill="#FDBA74"/></svg>';
-
-    // // Create a new Fabric.js Path object from the simplified SVG path data
-    // const path = new fabric.Path(pathData, {
-    //   left: 0,
-    //   top: 0,
-    //   fill: 'transparent',
-    //   stroke: 'black',
-    //   strokeWidth: 2,
-    // });
-
-    // // Add the path to the canvas
-    // canvas.add(path);
-
-    // canvas.clipPath = boundaryPath;
-    // canvas.requestRenderAll();
-    // boundariesPath = boundaryPath;
-  });
-}
 
 
 // function getBoundaryPathFromImage(imgElement) {
