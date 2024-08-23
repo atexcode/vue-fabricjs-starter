@@ -1,5 +1,5 @@
 {
-  "name": "my-fabric-project",
+  "name": "vue-fabricjs-starter",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -13,7 +13,8 @@
     "element-plus": "^2.8.0",
     "fabric": "^5.4.0",
     "potrace": "^2.1.8",
-    "vue": "^3.2.13"
+    "vue": "^3.2.13",
+    "webfontloader": "^1.6.28"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
