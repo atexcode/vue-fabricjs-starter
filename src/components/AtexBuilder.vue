@@ -298,10 +298,10 @@ const loadBackground = (file) => {
         selectable: false,
       });
 
-      // Send Img to Back
-      img.sendToBack();
       canvas.add(img);
       canvas.clipPath = img;
+      // Send Img to Back
+      img.sendToBack();
       canvas.requestRenderAll();
     });
   };
