@@ -6,6 +6,8 @@
 - **Text Handling:** Add and edit text elements on the canvas.
 - **Image Integration:** Upload and manage images on the canvas.
 - **Background Images:** Set background image with clipping path for advanced visual effects.
+- **Undo/Redo History:** Keep track of canvas history to facilitate the user with undo and redo.
+- **SVG Loading:** User can insert SVGs from URL or Data URL just by a single click.
 
 Whether you're building a canvas-based application or a creative tool, this starter kit offers a solid base to build upon with Vue 3 and Fabric.js.
 
@@ -50,6 +52,8 @@ Checkout live working demo @ [Vue FabricJs Starter - Atex Code](https://atexcode
 
 - Add text, images, and background images to the canvas.
 - Use the provided functionality to apply clipping paths and manage canvas elements.
+- Utilize the undo/redo functionality to keep track of changes and revert to previous states.
+- Insert SVGs from a URL or Data URL with a single click for enhanced graphical elements.
 
 ## Previews
 ![Background Image + Image + IText](https://atexcode.com/remote/screenshot1.png)

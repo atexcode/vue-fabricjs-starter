@@ -37,10 +37,10 @@
 
     <el-row class="toolbar bg-group ms-2" :gutter="5" style="width: fit-content;">
       <el-col :span="1.5">
-        <el-input v-model="svgStrURL" placeholder="SVG URL" @change="setActiveColor" />
+        <el-input v-model="svgStrURL" placeholder="SVG URL"></el-input>
       </el-col>
       <el-col :span="1.5">
-        <el-button icon="PictureFilled" @click="InsertSvg"> Load SVG</el-button>
+        <el-button icon="PictureFilled" @click="InsertSvg">Load SVG</el-button>
       </el-col>
     </el-row>
 
