@@ -27,6 +27,21 @@
           <el-button icon="PictureFilled"> Background Image</el-button>
         </el-upload>
       </el-col>
+      <el-col :span="1.5">
+        <el-button icon="ArrowDown" :disabled="!history.hasUndo" @click="canvas.undo()"> Undo</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button icon="ArrowUp" :disabled="!history.hasRedo" @click="canvas.redo()"> Redo</el-button>
+      </el-col>
+    </el-row>
+
+    <el-row class="toolbar bg-group ms-2" :gutter="5" style="width: fit-content;">
+      <el-col :span="1.5">
+        <el-input v-model="svgStrURL" placeholder="SVG URL" @change="setActiveColor" />
+      </el-col>
+      <el-col :span="1.5">
+        <el-button icon="PictureFilled" @click="InsertSvg"> Load SVG</el-button>
+      </el-col>
     </el-row>
 
 
@@ -40,11 +55,16 @@
 <script setup>
 import { nextTick, onMounted, ref, watch } from 'vue';
 import { fabric } from 'fabric';
+import 'fabric-history';
 
 const color = ref('#000000');
 const itemBackgroundColor = ref('#ffffff');
 
 const activeObject = ref(null);
+const history = ref({
+  hasUndo: false,
+  hasRedo: false,
+});
 let canvas;
 
 var deleteIcon = "data:image/svg+xml,%3C%3Fxml version='1.0' encoding='utf-8'%3F%3E%3C!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'%3E%3Csvg version='1.1' id='Ebene_1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' width='595.275px' height='595.275px' viewBox='200 215 230 470' xml:space='preserve'%3E%3Ccircle style='fill:%23F44336;' cx='299.76' cy='439.067' r='218.516'/%3E%3Cg%3E%3Crect x='267.162' y='307.978' transform='matrix(0.7071 -0.7071 0.7071 0.7071 -222.6202 340.6915)' style='fill:white;' width='65.545' height='262.18'/%3E%3Crect x='266.988' y='308.153' transform='matrix(0.7071 0.7071 -0.7071 0.7071 398.3889 -83.3116)' style='fill:white;' width='65.544' height='262.179'/%3E%3C/g%3E%3C/svg%3E";
@@ -93,10 +113,40 @@ onMounted(async () => {
     activeObject.value = null;
   });
 
+  canvas.on('history:append', () => {
+    console.log("History appended");
+    setHistoryFlags();
+  });
+
+  canvas.on('history:undo', () => {
+    console.log("History undo");
+    setHistoryFlags();
+  });
+
+  canvas.on('history:redo', () => {
+    console.log("History redo");
+    setHistoryFlags();
+  });
+
+  canvas.on('history:clear', () => {
+    console.log("History cleared");
+    setHistoryFlags();
+  });
+
 
   //Keydown Handlers
   window.addEventListener('keydown', handleKeyDown);
 });
+
+/**
+ * Method to set flag variable values for undo and redo
+ */
+const setHistoryFlags = () => {
+  if (!canvas) return;
+  history.value.hasUndo = canvas.canUndo();
+  history.value.hasRedo = canvas.canRedo();
+}
+
 
 /**
  * Tranformation Controlers
@@ -315,29 +365,27 @@ const loadBackground = (file) => {
   return false;
 }
 
-//   // new fabric.loadSVGFromURL(`./shirts.svg`, function (objects, options) {
-//   //   var svgData = fabric.util.groupSVGElements(objects, options);
+const svgStrURL = ref('');
 
-//   //   // Calculate the center position
-//   //   var canvasCenterX = canvas.getWidth() / 2;
-//   //   var canvasCenterY = canvas.getHeight() / 2;
+/**
+ * Load SVG from URL
+ */
+const InsertSvg = () => {
+  fabric.loadSVGFromURL(svgStrURL.value, function (objects, options) {
+    let svg = fabric.util.groupSVGElements(objects, options);
 
-//   //   // Calculate the position to center the SVG
-//   //   svgData.top = canvasCenterY - (svgData.height / 2);
-//   //   svgData.left = canvasCenterX - (svgData.width / 2);
+    // Apply saved properties
+    svg.set({
+        left: 130,
+        top: 30,
+    });
 
-//   //   svgData.stroke = "red";
-//   //   svgData.strokeWidth = 3;
-//   //   svgData.selectable = false;
-//   //   canvas.add(svgData);
-//   //   canvas.clipPath = svgData;
-//   // });
-
-//   // canvas.add(shirtImage);
-//   console.log(shirtImage);
-//   console.log("Button clicked:after");
-
-// }
+    canvas.add(svg);
+    
+    // Re-Render the canvas
+    canvas.renderAll();
+  });
+}
 
 loadControlls();
 
@@ -381,5 +429,14 @@ canvas {
 .inline {
   display: inline-block;
   margin: 0 5px 0 5px;
+}
+
+.bg-group {
+  background-color: #f0f0f0;
+  padding: 10px;
+}
+
+.ms-1 {
+  margin-left: 0.3rem !important;
 }
 </style>
