@@ -209,6 +209,9 @@ const loadControlls = () => {
     render: renderIcon(cloneImg),
     cornerSize: 16
   });
+
+  // Make the items to be resized from its center
+  fabric.Object.prototype.centeredScaling = true;
 }
 
 /**
