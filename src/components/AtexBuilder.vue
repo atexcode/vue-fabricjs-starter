@@ -14,6 +14,11 @@
         </el-upload>
       </el-col>
       <el-col :span="1.5">
+        <el-button :type="isDrawingMode ? 'primary' : ''" @click="toggleDrawingMode">
+          {{ isDrawingMode ? 'Stop Drawing' : 'Draw' }}
+        </el-button>
+      </el-col>
+      <el-col :span="1.5">
         <el-button @click="addRectangle"> Rectangle</el-button>
       </el-col>
       <el-col :span="1.5">
@@ -54,6 +59,12 @@
       <el-col :span="1.5">
         <el-button icon="PictureFilled" @click="InsertSvg">Load SVG</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <span style="line-height: 32px; padding: 0 10px;">Canvas BG:</span>
+      </el-col>
+      <el-col :span="1.5">
+        <el-color-picker v-model="canvasBackgroundColor" @change="changeCanvasBackground" />
+      </el-col>
     </el-row>
 
     <!-- Zoom Controls -->
@@ -83,6 +94,14 @@
       <el-col :span="1.5">
         <el-button icon="Download" @click="exportAsJPG"> Export JPG</el-button>
       </el-col>
+      <el-col :span="1.5">
+        <el-button icon="Download" @click="saveAsJSON"> Save JSON</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-upload :show-file-list="false" accept=".json" :before-upload="loadFromJSON">
+          <el-button icon="Upload"> Load JSON</el-button>
+        </el-upload>
+      </el-col>
     </el-row>
 
     <!-- Alignment Controls -->
@@ -107,6 +126,61 @@
       </el-col>
     </el-row>
 
+    <!-- Z-Index Controls -->
+    <el-row class="toolbar bg-group ms-2" :gutter="5" style="width: fit-content; margin-top: 10px;" v-if="activeObject">
+      <el-col :span="1.5">
+        <el-button @click="bringToFront"> To Front</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="bringForward"> Forward</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="sendBackward"> Backward</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="sendToBack"> To Back</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="flipHorizontal"> Flip H</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="flipVertical"> Flip V</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <span style="line-height: 32px; padding: 0 10px;">Opacity:</span>
+      </el-col>
+      <el-col :span="1.5">
+        <el-slider v-model="objectOpacity" @change="changeOpacity" :min="0" :max="1" :step="0.1" style="width: 150px;" />
+      </el-col>
+    </el-row>
+
+    <!-- Text Formatting Controls -->
+    <el-row class="toolbar bg-group ms-2" :gutter="5" style="width: fit-content; margin-top: 10px;" v-if="activeObject && (activeObject.type === 'textbox' || activeObject.type === 'i-text' || activeObject.type === 'text')">
+      <el-col :span="1.5">
+        <el-select v-model="selectedFont" @change="changeFont" placeholder="Font">
+          <el-option label="Arial" value="Arial"></el-option>
+          <el-option label="Helvetica" value="Helvetica"></el-option>
+          <el-option label="Times New Roman" value="Times New Roman"></el-option>
+          <el-option label="Courier New" value="Courier New"></el-option>
+          <el-option label="Georgia" value="Georgia"></el-option>
+          <el-option label="Verdana" value="Verdana"></el-option>
+          <el-option label="Comic Sans MS" value="Comic Sans MS"></el-option>
+        </el-select>
+      </el-col>
+      <el-col :span="1.5">
+        <el-input-number v-model="fontSize" @change="changeFontSize" :min="8" :max="200" />
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="toggleBold"><strong>B</strong></el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="toggleItalic"><em>I</em></el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="toggleUnderline"><u>U</u></el-button>
+      </el-col>
+    </el-row>
+
 
     <!-- Canvas -->
     <div>
@@ -123,6 +197,11 @@ import 'fabric-history';
 const color = ref('#000000');
 const itemBackgroundColor = ref('#ffffff');
 const zoomLevel = ref(1);
+const isDrawingMode = ref(false);
+const selectedFont = ref('Helvetica');
+const fontSize = ref(20);
+const objectOpacity = ref(1);
+const canvasBackgroundColor = ref('#ffffff');
 
 const activeObject = ref(null);
 const history = ref({
@@ -622,6 +701,222 @@ const alignBottom = () => {
 };
 
 /**
+ * Toggle drawing mode for freehand drawing
+ */
+const toggleDrawingMode = () => {
+  isDrawingMode.value = !isDrawingMode.value;
+  canvas.isDrawingMode = isDrawingMode.value;
+
+  if (isDrawingMode.value) {
+    canvas.freeDrawingBrush.color = color.value;
+    canvas.freeDrawingBrush.width = 3;
+  }
+};
+
+/**
+ * Update brush color when color changes
+ */
+watch(() => color.value, () => {
+  if (canvas && canvas.freeDrawingBrush) {
+    canvas.freeDrawingBrush.color = color.value;
+  }
+  setActiveColor();
+});
+
+/**
+ * Toggle bold formatting for selected text
+ */
+const toggleBold = () => {
+  const obj = activeObject.value;
+  if (obj && (obj.type === 'textbox' || obj.type === 'i-text' || obj.type === 'text')) {
+    const currentWeight = obj.fontWeight;
+    obj.set({ fontWeight: currentWeight === 'bold' ? 'normal' : 'bold' });
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Toggle italic formatting for selected text
+ */
+const toggleItalic = () => {
+  const obj = activeObject.value;
+  if (obj && (obj.type === 'textbox' || obj.type === 'i-text' || obj.type === 'text')) {
+    const currentStyle = obj.fontStyle;
+    obj.set({ fontStyle: currentStyle === 'italic' ? 'normal' : 'italic' });
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Toggle underline for selected text
+ */
+const toggleUnderline = () => {
+  const obj = activeObject.value;
+  if (obj && (obj.type === 'textbox' || obj.type === 'i-text' || obj.type === 'text')) {
+    obj.set({ underline: !obj.underline });
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Change font family for selected text
+ */
+const changeFont = () => {
+  const obj = activeObject.value;
+  if (obj && (obj.type === 'textbox' || obj.type === 'i-text' || obj.type === 'text')) {
+    obj.set({ fontFamily: selectedFont.value });
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Change font size for selected text
+ */
+const changeFontSize = () => {
+  const obj = activeObject.value;
+  if (obj && (obj.type === 'textbox' || obj.type === 'i-text' || obj.type === 'text')) {
+    obj.set({ fontSize: fontSize.value });
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Save canvas as JSON
+ */
+const saveAsJSON = () => {
+  const json = JSON.stringify(canvas.toJSON());
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'canvas-design.json';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+/**
+ * Load canvas from JSON file
+ */
+const loadFromJSON = (file) => {
+  const reader = new FileReader();
+
+  reader.onload = (event) => {
+    const json = event.target.result;
+    canvas.loadFromJSON(json, () => {
+      canvas.renderAll();
+      console.log('Canvas loaded from JSON successfully');
+    });
+  };
+
+  reader.onerror = (error) => {
+    console.error('FileReader error:', error);
+  };
+
+  reader.readAsText(file.raw || file);
+  return false;
+};
+
+/**
+ * Bring selected object to front
+ */
+const bringToFront = () => {
+  const obj = activeObject.value;
+  if (obj) {
+    canvas.bringToFront(obj);
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Send selected object to back
+ */
+const sendToBack = () => {
+  const obj = activeObject.value;
+  if (obj) {
+    canvas.sendToBack(obj);
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Bring selected object forward
+ */
+const bringForward = () => {
+  const obj = activeObject.value;
+  if (obj) {
+    canvas.bringForward(obj);
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Send selected object backward
+ */
+const sendBackward = () => {
+  const obj = activeObject.value;
+  if (obj) {
+    canvas.sendBackward(obj);
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Change opacity of selected object
+ */
+const changeOpacity = () => {
+  const obj = activeObject.value;
+  if (obj) {
+    obj.set({ opacity: objectOpacity.value });
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Change canvas background color
+ */
+const changeCanvasBackground = () => {
+  canvas.backgroundColor = canvasBackgroundColor.value;
+  canvas.renderAll();
+};
+
+/**
+ * Flip selected object horizontally
+ */
+const flipHorizontal = () => {
+  const obj = activeObject.value;
+  if (obj) {
+    obj.set({ flipX: !obj.flipX });
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Flip selected object vertically
+ */
+const flipVertical = () => {
+  const obj = activeObject.value;
+  if (obj) {
+    obj.set({ flipY: !obj.flipY });
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Update opacity slider when object is selected
+ */
+watch(() => activeObject.value, (newObj) => {
+  if (newObj) {
+    objectOpacity.value = newObj.opacity || 1;
+    if (newObj.type === 'textbox' || newObj.type === 'i-text' || newObj.type === 'text') {
+      selectedFont.value = newObj.fontFamily || 'Helvetica';
+      fontSize.value = newObj.fontSize || 20;
+    }
+  }
+});
+
+/**
  * Calculate Canvas Center
  */
 const getCenter = () => {
@@ -718,20 +1013,8 @@ const handleKeyDown = (e) => {
 };
 
 watch(
-  () => color.value,
-  () => setActiveColor()
-);
-
-watch(
   () => itemBackgroundColor.value,
   () => setBackgroundColor()
-);
-
-watch(
-  () => activeObject.value,
-  () => {
-
-  }
 );
 
 </script>
