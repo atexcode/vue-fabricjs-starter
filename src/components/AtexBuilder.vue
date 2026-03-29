@@ -13,6 +13,18 @@
           <el-button icon="Picture"> Image</el-button>
         </el-upload>
       </el-col>
+      <el-col :span="1.5">
+        <el-button @click="addRectangle"> Rectangle</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="addCircle"> Circle</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="addTriangle"> Triangle</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="addLine"> Line</el-button>
+      </el-col>
       <el-col :span="1.5" v-if="activeObject">
         <el-color-picker v-model="color" show-alpha @active-change="(c) => color = c" />
       </el-col>
@@ -44,6 +56,57 @@
       </el-col>
     </el-row>
 
+    <!-- Zoom Controls -->
+    <el-row class="toolbar bg-group ms-2" :gutter="5" style="width: fit-content; margin-top: 10px;">
+      <el-col :span="1.5">
+        <el-button icon="ZoomIn" @click="zoomIn"> Zoom In</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button icon="ZoomOut" @click="zoomOut"> Zoom Out</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="resetZoom"> 100%</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="fitToScreen"> Fit</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <span style="line-height: 32px; padding: 0 10px;">{{ zoomLevel }}%</span>
+      </el-col>
+    </el-row>
+
+    <!-- Export Controls -->
+    <el-row class="toolbar bg-group ms-2" :gutter="5" style="width: fit-content; margin-top: 10px;">
+      <el-col :span="1.5">
+        <el-button icon="Download" @click="exportAsPNG"> Export PNG</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button icon="Download" @click="exportAsJPG"> Export JPG</el-button>
+      </el-col>
+    </el-row>
+
+    <!-- Alignment Controls -->
+    <el-row class="toolbar bg-group ms-2" :gutter="5" style="width: fit-content; margin-top: 10px;" v-if="activeObject">
+      <el-col :span="1.5">
+        <el-button @click="alignLeft"> Align Left</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="alignCenterH"> Center H</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="alignRight"> Align Right</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="alignTop"> Align Top</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="alignCenterV"> Center V</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="alignBottom"> Align Bottom</el-button>
+      </el-col>
+    </el-row>
+
 
     <!-- Canvas -->
     <div>
@@ -59,6 +122,7 @@ import 'fabric-history';
 
 const color = ref('#000000');
 const itemBackgroundColor = ref('#ffffff');
+const zoomLevel = ref(1);
 
 const activeObject = ref(null);
 const history = ref({
@@ -324,6 +388,240 @@ const eraseItem = () => {
 };
 
 /**
+ * Duplicate the selected object
+ */
+const duplicateObject = () => {
+  const obj = activeObject.value;
+
+  if (obj) {
+    obj.clone((cloned) => {
+      cloned.set({
+        left: cloned.left + 10,
+        top: cloned.top + 10,
+      });
+      canvas.add(cloned);
+      canvas.setActiveObject(cloned);
+      canvas.renderAll();
+    });
+  }
+};
+
+/**
+ * Add Rectangle shape to canvas
+ */
+const addRectangle = () => {
+  const canvasCenter = getCenter();
+  const rect = new fabric.Rect({
+    left: canvasCenter.x - 50,
+    top: canvasCenter.y - 50,
+    width: 100,
+    height: 100,
+    fill: itemBackgroundColor.value,
+    stroke: color.value,
+    strokeWidth: 2,
+  });
+  canvas.add(rect);
+};
+
+/**
+ * Add Circle shape to canvas
+ */
+const addCircle = () => {
+  const canvasCenter = getCenter();
+  const circle = new fabric.Circle({
+    left: canvasCenter.x - 50,
+    top: canvasCenter.y - 50,
+    radius: 50,
+    fill: itemBackgroundColor.value,
+    stroke: color.value,
+    strokeWidth: 2,
+  });
+  canvas.add(circle);
+};
+
+/**
+ * Add Triangle shape to canvas
+ */
+const addTriangle = () => {
+  const canvasCenter = getCenter();
+  const triangle = new fabric.Triangle({
+    left: canvasCenter.x - 50,
+    top: canvasCenter.y - 50,
+    width: 100,
+    height: 100,
+    fill: itemBackgroundColor.value,
+    stroke: color.value,
+    strokeWidth: 2,
+  });
+  canvas.add(triangle);
+};
+
+/**
+ * Add Line shape to canvas
+ */
+const addLine = () => {
+  const canvasCenter = getCenter();
+  const line = new fabric.Line([canvasCenter.x - 50, canvasCenter.y, canvasCenter.x + 50, canvasCenter.y], {
+    stroke: color.value,
+    strokeWidth: 2,
+  });
+  canvas.add(line);
+};
+
+/**
+ * Zoom In
+ */
+const zoomIn = () => {
+  let zoom = canvas.getZoom();
+  zoom += 0.1;
+  if (zoom > 3) zoom = 3; // Max zoom level
+  canvas.setZoom(zoom);
+  zoomLevel.value = Math.round(zoom * 100);
+  canvas.renderAll();
+};
+
+/**
+ * Zoom Out
+ */
+const zoomOut = () => {
+  let zoom = canvas.getZoom();
+  zoom -= 0.1;
+  if (zoom < 0.1) zoom = 0.1; // Min zoom level
+  canvas.setZoom(zoom);
+  zoomLevel.value = Math.round(zoom * 100);
+  canvas.renderAll();
+};
+
+/**
+ * Reset Zoom to 100%
+ */
+const resetZoom = () => {
+  canvas.setZoom(1);
+  zoomLevel.value = 100;
+  canvas.renderAll();
+};
+
+/**
+ * Fit canvas to viewport
+ */
+const fitToScreen = () => {
+  const canvasWidth = canvas.getWidth();
+  const canvasHeight = canvas.getHeight();
+  const windowWidth = window.innerWidth - 100;
+  const windowHeight = window.innerHeight - 200;
+
+  const scaleX = windowWidth / canvasWidth;
+  const scaleY = windowHeight / canvasHeight;
+  const scale = Math.min(scaleX, scaleY, 1);
+
+  canvas.setZoom(scale);
+  zoomLevel.value = Math.round(scale * 100);
+  canvas.renderAll();
+};
+
+/**
+ * Export canvas as PNG
+ */
+const exportAsPNG = () => {
+  const dataURL = canvas.toDataURL({
+    format: 'png',
+    quality: 1,
+    multiplier: 2, // Higher resolution
+  });
+  downloadImage(dataURL, 'canvas-export.png');
+};
+
+/**
+ * Export canvas as JPG
+ */
+const exportAsJPG = () => {
+  const dataURL = canvas.toDataURL({
+    format: 'jpeg',
+    quality: 0.9,
+    multiplier: 2, // Higher resolution
+  });
+  downloadImage(dataURL, 'canvas-export.jpg');
+};
+
+/**
+ * Helper function to download image
+ */
+const downloadImage = (dataURL, filename) => {
+  const link = document.createElement('a');
+  link.href = dataURL;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
+/**
+ * Align selected object to left
+ */
+const alignLeft = () => {
+  const obj = activeObject.value;
+  if (obj) {
+    obj.set({ left: 0 });
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Align selected object to center horizontally
+ */
+const alignCenterH = () => {
+  const obj = activeObject.value;
+  if (obj) {
+    obj.set({ left: (canvas.getWidth() - obj.width * obj.scaleX) / 2 });
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Align selected object to right
+ */
+const alignRight = () => {
+  const obj = activeObject.value;
+  if (obj) {
+    obj.set({ left: canvas.getWidth() - obj.width * obj.scaleX });
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Align selected object to top
+ */
+const alignTop = () => {
+  const obj = activeObject.value;
+  if (obj) {
+    obj.set({ top: 0 });
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Align selected object to center vertically
+ */
+const alignCenterV = () => {
+  const obj = activeObject.value;
+  if (obj) {
+    obj.set({ top: (canvas.getHeight() - obj.height * obj.scaleY) / 2 });
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Align selected object to bottom
+ */
+const alignBottom = () => {
+  const obj = activeObject.value;
+  if (obj) {
+    obj.set({ top: canvas.getHeight() - obj.height * obj.scaleY });
+    canvas.renderAll();
+  }
+};
+
+/**
  * Calculate Canvas Center
  */
 const getCenter = () => {
@@ -394,8 +692,28 @@ loadControlls();
 
 //keydown definition
 const handleKeyDown = (e) => {
-  if (e.key === 'Delete') {
+  // Delete key - remove selected object
+  if (e.key === 'Delete' || e.key === 'Backspace') {
     eraseItem();
+  }
+  // Ctrl+Z - Undo
+  else if (e.ctrlKey && e.key === 'z') {
+    e.preventDefault();
+    if (canvas.canUndo()) {
+      canvas.undo();
+    }
+  }
+  // Ctrl+Y or Ctrl+Shift+Z - Redo
+  else if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'z')) {
+    e.preventDefault();
+    if (canvas.canRedo()) {
+      canvas.redo();
+    }
+  }
+  // Ctrl+D - Duplicate selected object
+  else if (e.ctrlKey && e.key === 'd') {
+    e.preventDefault();
+    duplicateObject();
   }
 };
 
