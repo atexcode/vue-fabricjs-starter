@@ -181,6 +181,34 @@
       </el-col>
     </el-row>
 
+    <!-- Image Filter Controls -->
+    <el-row class="toolbar bg-group ms-2" :gutter="5" style="width: fit-content; margin-top: 10px;" v-if="activeObject && activeObject.type === 'image'">
+      <el-col :span="1.5">
+        <el-button @click="applyGrayscale"> Grayscale</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="applySepia"> Sepia</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="applyBlur"> Blur</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="applyBrightness(0.2)"> Brightness+</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="applyBrightness(-0.2)"> Brightness-</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="applyContrast(0.2)"> Contrast+</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="applyContrast(-0.2)"> Contrast-</el-button>
+      </el-col>
+      <el-col :span="1.5">
+        <el-button @click="clearFilters"> Clear Filters</el-button>
+      </el-col>
+    </el-row>
+
 
     <!-- Canvas -->
     <div>
@@ -899,6 +927,83 @@ const flipVertical = () => {
   const obj = activeObject.value;
   if (obj) {
     obj.set({ flipY: !obj.flipY });
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Apply grayscale filter to selected image
+ */
+const applyGrayscale = () => {
+  const obj = activeObject.value;
+  if (obj && obj.type === 'image') {
+    const filter = new fabric.Image.filters.Grayscale();
+    obj.filters.push(filter);
+    obj.applyFilters();
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Apply sepia filter to selected image
+ */
+const applySepia = () => {
+  const obj = activeObject.value;
+  if (obj && obj.type === 'image') {
+    const filter = new fabric.Image.filters.Sepia();
+    obj.filters.push(filter);
+    obj.applyFilters();
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Apply blur filter to selected image
+ */
+const applyBlur = () => {
+  const obj = activeObject.value;
+  if (obj && obj.type === 'image') {
+    const filter = new fabric.Image.filters.Blur({ blur: 0.5 });
+    obj.filters.push(filter);
+    obj.applyFilters();
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Apply brightness filter to selected image
+ */
+const applyBrightness = (value = 0.2) => {
+  const obj = activeObject.value;
+  if (obj && obj.type === 'image') {
+    const filter = new fabric.Image.filters.Brightness({ brightness: value });
+    obj.filters.push(filter);
+    obj.applyFilters();
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Apply contrast filter to selected image
+ */
+const applyContrast = (value = 0.2) => {
+  const obj = activeObject.value;
+  if (obj && obj.type === 'image') {
+    const filter = new fabric.Image.filters.Contrast({ contrast: value });
+    obj.filters.push(filter);
+    obj.applyFilters();
+    canvas.renderAll();
+  }
+};
+
+/**
+ * Clear all filters from selected image
+ */
+const clearFilters = () => {
+  const obj = activeObject.value;
+  if (obj && obj.type === 'image') {
+    obj.filters = [];
+    obj.applyFilters();
     canvas.renderAll();
   }
 };
