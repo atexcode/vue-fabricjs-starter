@@ -45,10 +45,10 @@
         </el-upload>
       </el-col>
       <el-col :span="1.5">
-        <el-button icon="ArrowDown" :disabled="!history.hasUndo" @click="canvas.undo()"> Undo</el-button>
+        <el-button icon="ArrowDown" :disabled="!history.hasUndo" @click="undo()"> Undo</el-button>
       </el-col>
       <el-col :span="1.5">
-        <el-button icon="ArrowUp" :disabled="!history.hasRedo" @click="canvas.redo()"> Redo</el-button>
+        <el-button icon="ArrowUp" :disabled="!history.hasRedo" @click="redo()"> Redo</el-button>
       </el-col>
     </el-row>
 
@@ -220,11 +220,10 @@
 <script setup>
 import { nextTick, onMounted, ref, watch } from 'vue';
 import { fabric } from 'fabric';
-import 'fabric-history';
 
 const color = ref('#000000');
 const itemBackgroundColor = ref('#ffffff');
-const zoomLevel = ref(1);
+const zoomLevel = ref(100);
 const isDrawingMode = ref(false);
 const selectedFont = ref('Helvetica');
 const fontSize = ref(20);
@@ -238,6 +237,58 @@ const history = ref({
 });
 let canvas;
 
+// Custom undo/redo stacks (fabric-history is not compatible with Fabric v7)
+const MAX_HISTORY_SIZE = 50;
+let undoStack = [];
+let redoStack = [];
+let isHistoryAction = false;
+
+/**
+ * Save canvas state to undo stack (capped at MAX_HISTORY_SIZE)
+ */
+const saveState = () => {
+  if (isHistoryAction) return;
+  redoStack = [];
+  undoStack.push(JSON.stringify(canvas.toJSON()));
+  if (undoStack.length > MAX_HISTORY_SIZE) {
+    undoStack.shift();
+  }
+  history.value.hasUndo = undoStack.length > 1;
+  history.value.hasRedo = false;
+};
+
+/**
+ * Undo last canvas action
+ */
+const undo = () => {
+  if (undoStack.length <= 1) return;
+  isHistoryAction = true;
+  redoStack.push(undoStack.pop());
+  const prevState = undoStack[undoStack.length - 1];
+  canvas.loadFromJSON(prevState, () => {
+    canvas.renderAll();
+    history.value.hasUndo = undoStack.length > 1;
+    history.value.hasRedo = redoStack.length > 0;
+    isHistoryAction = false;
+  });
+};
+
+/**
+ * Redo last undone canvas action
+ */
+const redo = () => {
+  if (redoStack.length === 0) return;
+  isHistoryAction = true;
+  const nextState = redoStack.pop();
+  undoStack.push(nextState);
+  canvas.loadFromJSON(nextState, () => {
+    canvas.renderAll();
+    history.value.hasUndo = undoStack.length > 1;
+    history.value.hasRedo = redoStack.length > 0;
+    isHistoryAction = false;
+  });
+};
+
 var deleteIcon = "data:image/svg+xml,%3C%3Fxml version='1.0' encoding='utf-8'%3F%3E%3C!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'%3E%3Csvg version='1.1' id='Ebene_1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' width='595.275px' height='595.275px' viewBox='200 215 230 470' xml:space='preserve'%3E%3Ccircle style='fill:%23F44336;' cx='299.76' cy='439.067' r='218.516'/%3E%3Cg%3E%3Crect x='267.162' y='307.978' transform='matrix(0.7071 -0.7071 0.7071 0.7071 -222.6202 340.6915)' style='fill:white;' width='65.545' height='262.18'/%3E%3Crect x='266.988' y='308.153' transform='matrix(0.7071 0.7071 -0.7071 0.7071 398.3889 -83.3116)' style='fill:white;' width='65.544' height='262.179'/%3E%3C/g%3E%3C/svg%3E";
 var cloneIcon = "data:image/svg+xml,%3C%3Fxml version='1.0' encoding='iso-8859-1'%3F%3E%3Csvg version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' viewBox='0 0 55.699 55.699' width='100px' height='100px' xml:space='preserve'%3E%3Cpath style='fill:%23010002;' d='M51.51,18.001c-0.006-0.085-0.022-0.167-0.05-0.248c-0.012-0.034-0.02-0.067-0.035-0.1 c-0.049-0.106-0.109-0.206-0.194-0.291v-0.001l0,0c0,0-0.001-0.001-0.001-0.002L34.161,0.293c-0.086-0.087-0.188-0.148-0.295-0.197 c-0.027-0.013-0.057-0.02-0.086-0.03c-0.086-0.029-0.174-0.048-0.265-0.053C33.494,0.011,33.475,0,33.453,0H22.177 c-3.678,0-6.669,2.992-6.669,6.67v1.674h-4.663c-3.678,0-6.67,2.992-6.67,6.67V49.03c0,3.678,2.992,6.669,6.67,6.669h22.677 c3.677,0,6.669-2.991,6.669-6.669v-1.675h4.664c3.678,0,6.669-2.991,6.669-6.669V18.069C51.524,18.045,51.512,18.025,51.51,18.001z M34.454,3.414l13.655,13.655h-8.985c-2.575,0-4.67-2.095-4.67-4.67V3.414z M38.191,49.029c0,2.574-2.095,4.669-4.669,4.669H10.845 c-2.575,0-4.67-2.095-4.67-4.669V15.014c0-2.575,2.095-4.67,4.67-4.67h5.663h4.614v10.399c0,3.678,2.991,6.669,6.668,6.669h10.4 v18.942L38.191,49.029L38.191,49.029z M36.777,25.412h-8.986c-2.574,0-4.668-2.094-4.668-4.669v-8.985L36.777,25.412z M44.855,45.355h-4.664V26.412c0-0.023-0.012-0.044-0.014-0.067c-0.006-0.085-0.021-0.167-0.049-0.249 c-0.012-0.033-0.021-0.066-0.036-0.1c-0.048-0.105-0.109-0.205-0.194-0.29l0,0l0,0c0-0.001-0.001-0.002-0.001-0.002L22.829,8.637 c-0.087-0.086-0.188-0.147-0.295-0.196c-0.029-0.013-0.058-0.021-0.088-0.031c-0.086-0.03-0.172-0.048-0.263-0.053 c-0.021-0.002-0.04-0.013-0.062-0.013h-4.614V6.67c0-2.575,2.095-4.67,4.669-4.67h10.277v10.4c0,3.678,2.992,6.67,6.67,6.67h10.399 v21.616C49.524,43.26,47.429,45.355,44.855,45.355z'/%3E%3C/svg%3E%0A"
 
@@ -246,14 +297,17 @@ onMounted(async () => {
   canvas = new fabric.Canvas('atexCanvas', {
     width: 800,
     height: 600,
+    backgroundColor: canvasBackgroundColor.value,
   });
 
   await nextTick();
 
+  // Save initial state for undo/redo
+  saveState();
+
   canvas.on('selection:created', () => {
     let selectedObject = canvas.getActiveObject();
     activeObject.value = selectedObject;
-    // activeObject.value = canvas.getActiveObject();
     if (activeObject.value) {
       selectedObject.set({
         borderColor: 'red',
@@ -284,40 +338,14 @@ onMounted(async () => {
     activeObject.value = null;
   });
 
-  canvas.on('history:append', () => {
-    console.log("History appended");
-    setHistoryFlags();
-  });
-
-  canvas.on('history:undo', () => {
-    console.log("History undo");
-    setHistoryFlags();
-  });
-
-  canvas.on('history:redo', () => {
-    console.log("History redo");
-    setHistoryFlags();
-  });
-
-  canvas.on('history:clear', () => {
-    console.log("History cleared");
-    setHistoryFlags();
-  });
-
+  // Save state after every object modification for undo/redo
+  canvas.on('object:added', saveState);
+  canvas.on('object:modified', saveState);
+  canvas.on('object:removed', saveState);
 
   //Keydown Handlers
   window.addEventListener('keydown', handleKeyDown);
 });
-
-/**
- * Method to set flag variable values for undo and redo
- */
-const setHistoryFlags = () => {
-  if (!canvas) return;
-  history.value.hasUndo = canvas.canUndo();
-  history.value.hasRedo = canvas.canRedo();
-}
-
 
 /**
  * Tranformation Controlers
@@ -627,26 +655,34 @@ const fitToScreen = () => {
 };
 
 /**
- * Export canvas as PNG
+ * Export canvas as PNG, ignoring current zoom/pan viewport transform
  */
 const exportAsPNG = () => {
+  const currentTransform = canvas.viewportTransform;
+  canvas.viewportTransform = [1, 0, 0, 1, 0, 0];
   const dataURL = canvas.toDataURL({
     format: 'png',
     quality: 1,
     multiplier: 2, // Higher resolution
   });
+  canvas.viewportTransform = currentTransform;
+  canvas.renderAll();
   downloadImage(dataURL, 'canvas-export.png');
 };
 
 /**
- * Export canvas as JPG
+ * Export canvas as JPG, ignoring current zoom/pan viewport transform
  */
 const exportAsJPG = () => {
+  const currentTransform = canvas.viewportTransform;
+  canvas.viewportTransform = [1, 0, 0, 1, 0, 0];
   const dataURL = canvas.toDataURL({
     format: 'jpeg',
     quality: 0.9,
     multiplier: 2, // Higher resolution
   });
+  canvas.viewportTransform = currentTransform;
+  canvas.renderAll();
   downloadImage(dataURL, 'canvas-export.jpg');
 };
 
@@ -668,7 +704,9 @@ const downloadImage = (dataURL, filename) => {
 const alignLeft = () => {
   const obj = activeObject.value;
   if (obj) {
-    obj.set({ left: 0 });
+    const bound = obj.getBoundingRect();
+    obj.set({ left: obj.left - bound.left });
+    obj.setCoords();
     canvas.renderAll();
   }
 };
@@ -679,7 +717,9 @@ const alignLeft = () => {
 const alignCenterH = () => {
   const obj = activeObject.value;
   if (obj) {
-    obj.set({ left: (canvas.getWidth() - obj.width * obj.scaleX) / 2 });
+    const bound = obj.getBoundingRect();
+    obj.set({ left: obj.left + (canvas.getWidth() / 2) - (bound.left + bound.width / 2) });
+    obj.setCoords();
     canvas.renderAll();
   }
 };
@@ -690,7 +730,9 @@ const alignCenterH = () => {
 const alignRight = () => {
   const obj = activeObject.value;
   if (obj) {
-    obj.set({ left: canvas.getWidth() - obj.width * obj.scaleX });
+    const bound = obj.getBoundingRect();
+    obj.set({ left: obj.left + canvas.getWidth() - (bound.left + bound.width) });
+    obj.setCoords();
     canvas.renderAll();
   }
 };
@@ -701,7 +743,9 @@ const alignRight = () => {
 const alignTop = () => {
   const obj = activeObject.value;
   if (obj) {
-    obj.set({ top: 0 });
+    const bound = obj.getBoundingRect();
+    obj.set({ top: obj.top - bound.top });
+    obj.setCoords();
     canvas.renderAll();
   }
 };
@@ -712,7 +756,9 @@ const alignTop = () => {
 const alignCenterV = () => {
   const obj = activeObject.value;
   if (obj) {
-    obj.set({ top: (canvas.getHeight() - obj.height * obj.scaleY) / 2 });
+    const bound = obj.getBoundingRect();
+    obj.set({ top: obj.top + (canvas.getHeight() / 2) - (bound.top + bound.height / 2) });
+    obj.setCoords();
     canvas.renderAll();
   }
 };
@@ -723,7 +769,9 @@ const alignCenterV = () => {
 const alignBottom = () => {
   const obj = activeObject.value;
   if (obj) {
-    obj.set({ top: canvas.getHeight() - obj.height * obj.scaleY });
+    const bound = obj.getBoundingRect();
+    obj.set({ top: obj.top + canvas.getHeight() - (bound.top + bound.height) });
+    obj.setCoords();
     canvas.renderAll();
   }
 };
@@ -905,8 +953,14 @@ const changeOpacity = () => {
  * Change canvas background color
  */
 const changeCanvasBackground = () => {
-  canvas.backgroundColor = canvasBackgroundColor.value;
-  canvas.renderAll();
+  if (!canvas) return;
+  const color = canvasBackgroundColor.value || '#ffffff';
+  if (typeof canvas.setBackgroundColor === 'function') {
+    canvas.setBackgroundColor(color, canvas.renderAll.bind(canvas));
+  } else {
+    canvas.backgroundColor = color;
+    canvas.renderAll();
+  }
 };
 
 /**
@@ -932,68 +986,58 @@ const flipVertical = () => {
 };
 
 /**
- * Apply grayscale filter to selected image
+ * Apply a single instance of the specified Fabric image filter,
+ * replacing any existing instance of the same filter type.
  */
-const applyGrayscale = () => {
+const applyImageFilter = (FilterClass, options = {}) => {
   const obj = activeObject.value;
   if (obj && obj.type === 'image') {
-    const filter = new fabric.Image.filters.Grayscale();
-    obj.filters.push(filter);
+    obj.filters = obj.filters || [];
+    const existingIndex = obj.filters.findIndex((f) => f instanceof FilterClass);
+    const filter = new FilterClass(options);
+    if (existingIndex !== -1) {
+      obj.filters.splice(existingIndex, 1, filter);
+    } else {
+      obj.filters.push(filter);
+    }
     obj.applyFilters();
     canvas.renderAll();
   }
+};
+
+/**
+ * Apply grayscale filter to selected image
+ */
+const applyGrayscale = () => {
+  applyImageFilter(fabric.Image.filters.Grayscale);
 };
 
 /**
  * Apply sepia filter to selected image
  */
 const applySepia = () => {
-  const obj = activeObject.value;
-  if (obj && obj.type === 'image') {
-    const filter = new fabric.Image.filters.Sepia();
-    obj.filters.push(filter);
-    obj.applyFilters();
-    canvas.renderAll();
-  }
+  applyImageFilter(fabric.Image.filters.Sepia);
 };
 
 /**
  * Apply blur filter to selected image
  */
 const applyBlur = () => {
-  const obj = activeObject.value;
-  if (obj && obj.type === 'image') {
-    const filter = new fabric.Image.filters.Blur({ blur: 0.5 });
-    obj.filters.push(filter);
-    obj.applyFilters();
-    canvas.renderAll();
-  }
+  applyImageFilter(fabric.Image.filters.Blur, { blur: 0.5 });
 };
 
 /**
  * Apply brightness filter to selected image
  */
 const applyBrightness = (value = 0.2) => {
-  const obj = activeObject.value;
-  if (obj && obj.type === 'image') {
-    const filter = new fabric.Image.filters.Brightness({ brightness: value });
-    obj.filters.push(filter);
-    obj.applyFilters();
-    canvas.renderAll();
-  }
+  applyImageFilter(fabric.Image.filters.Brightness, { brightness: value });
 };
 
 /**
  * Apply contrast filter to selected image
  */
 const applyContrast = (value = 0.2) => {
-  const obj = activeObject.value;
-  if (obj && obj.type === 'image') {
-    const filter = new fabric.Image.filters.Contrast({ contrast: value });
-    obj.filters.push(filter);
-    obj.applyFilters();
-    canvas.renderAll();
-  }
+  applyImageFilter(fabric.Image.filters.Contrast, { contrast: value });
 };
 
 /**
@@ -1092,23 +1136,31 @@ loadControlls();
 
 //keydown definition
 const handleKeyDown = (e) => {
+  // Ignore key events when focus is inside an input, textarea, or contenteditable element,
+  // or when a Fabric IText/Textbox is in editing mode
+  const target = e.target;
+  const isEditableTarget =
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.isContentEditable;
+  const isFabricEditing = canvas && canvas.getActiveObject() &&
+    (canvas.getActiveObject().isEditing === true);
+  if (isEditableTarget || isFabricEditing) return;
+
   // Delete key - remove selected object
   if (e.key === 'Delete' || e.key === 'Backspace') {
+    e.preventDefault();
     eraseItem();
   }
   // Ctrl+Z - Undo
   else if (e.ctrlKey && e.key === 'z') {
     e.preventDefault();
-    if (canvas.canUndo()) {
-      canvas.undo();
-    }
+    undo();
   }
   // Ctrl+Y or Ctrl+Shift+Z - Redo
   else if ((e.ctrlKey && e.key === 'y') || (e.ctrlKey && e.shiftKey && e.key === 'z')) {
     e.preventDefault();
-    if (canvas.canRedo()) {
-      canvas.redo();
-    }
+    redo();
   }
   // Ctrl+D - Duplicate selected object
   else if (e.ctrlKey && e.key === 'd') {
