@@ -1013,7 +1013,7 @@ const clearFilters = () => {
  */
 watch(() => activeObject.value, (newObj) => {
   if (newObj) {
-    objectOpacity.value = newObj.opacity || 1;
+    objectOpacity.value = newObj.opacity ?? 1;
     if (newObj.type === 'textbox' || newObj.type === 'i-text' || newObj.type === 'text') {
       selectedFont.value = newObj.fontFamily || 'Helvetica';
       fontSize.value = newObj.fontSize || 20;
